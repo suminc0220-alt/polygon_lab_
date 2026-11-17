@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>POLYGON LAB : 다각형 탐구실</title>
+<style>
+/* ===== 디자인 토큰: 파스텔 블루 · 네이비 · 화이트 ===== */
+:root{
+  --bg:#f2f7ff; --navy:#14284b; --blue:#5b8fd6; --pale:#d9e8fb;
+  --line:#c3d7f2; --mid:#3d5f94; --white:#fff;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:var(--bg); color:var(--navy);
+  font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  display:flex; flex-direction:column; overflow:hidden; /* 한 화면에 모두 담기 */
+}
+header{display:flex; justify-content:space-between; align-items:flex-end; gap:24px; padding:12px 36px 4px}
+h1{margin:0; font-size:clamp(28px,3.2vw,46px); font-weight:900; letter-spacing:.02em; line-height:1.1}
+.sub{margin:6px 0 0; font-size:clamp(16px,1.6vw,22px); color:var(--mid); font-weight:600}
+.guide{margin:0; max-width:430px; font-size:clamp(14px,1.2vw,17px); line-height:1.5; color:var(--mid); text-align:right}
+
+/* 탐구 질문 띠 */
+.qbar{
+  margin:6px 36px 0; padding:9px 18px; background:var(--navy); color:var(--white);
+  border-radius:16px; display:flex; align-items:center; gap:18px;
+}
+.qdots{display:flex; gap:8px}
+.qdots span{width:32px; height:32px; border-radius:50%; display:grid; place-items:center; font-weight:800; font-size:15px;
+  background:rgba(255,255,255,.14); color:#9db8e3}
+.qdots span.on{background:var(--white); color:var(--navy)}
+.qdots span.done{background:#7fa8e6; color:var(--navy)}
+.qtext{flex:1; min-width:0}
+.qtext strong{display:block; font-size:clamp(18px,1.9vw,26px); line-height:1.3}
+.qtext small{display:block; margin-top:3px; font-size:clamp(13px,1.2vw,17px); color:#b9cdee}
+.qnav{display:flex; gap:8px}
+.qnav button{background:rgba(255,255,255,.14); color:var(--white); border:2px solid rgba(255,255,255,.35)}
+.qnav button:hover:not(:disabled){background:rgba(255,255,255,.26)}
+
+main{flex:1; min-height:0; display:grid; grid-template-columns:1fr 370px; grid-template-rows:minmax(0,1fr); gap:20px; padding:12px 36px 16px}
+.stage{background:var(--white); border:2px solid var(--line); border-radius:20px; min-height:0; overflow:hidden}
+svg{display:block; width:100%; height:100%; touch-action:none; user-select:none}
+.v{cursor:grab} .v:hover .vc{stroke-width:6}
+body.dragging, body.dragging .v{cursor:grabbing}
+
+/* 오른쪽 패널 */
+.panel{display:flex; flex-direction:column; gap:10px; min-height:0; overflow-y:auto}
+.card{background:var(--white); border:2px solid var(--line); border-radius:16px; padding:10px 16px}
+.card h2{margin:0 0 4px; font-size:16px; color:var(--mid); font-weight:700}
+.counter{display:flex; align-items:center; justify-content:space-between}
+.counter output{font-size:26px; font-weight:900}
+.counter output small{font-size:18px; font-weight:700; margin-left:2px}
+button{
+  font:inherit; font-weight:800; cursor:pointer; border-radius:12px; border:2px solid var(--navy);
+  background:var(--pale); color:var(--navy); min-height:44px; padding:0 18px; font-size:17px;
+}
+button:hover:not(:disabled){background:#c3dbf8}
+button:focus-visible{outline:3px solid var(--blue); outline-offset:2px}
+button:disabled{opacity:.35; cursor:not-allowed}
+.round{width:56px; height:56px; padding:0; border-radius:50%; font-size:30px; line-height:1}
+/* 꼭짓점 개수 슬라이더 */
+.counter{justify-content:center}
+input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:12px; margin:8px 0 2px;
+  border-radius:6px; background:var(--pale); border:2px solid var(--navy); cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:34px; height:34px; border-radius:50%;
+  background:var(--navy); border:4px solid var(--white); box-shadow:0 0 0 2px var(--navy)}
+input[type=range]::-moz-range-thumb{width:26px; height:26px; border-radius:50%;
+  background:var(--navy); border:4px solid var(--white); box-shadow:0 0 0 2px var(--navy)}
+input[type=range]:focus-visible{outline:3px solid var(--blue); outline-offset:6px}
+.ticks{display:flex; justify-content:space-between; padding:0 4px; font-size:15px; font-weight:700; color:var(--mid)}
+.angles{display:grid; grid-template-columns:1fr 1fr; gap:4px 14px; align-content:start; min-height:136px /* 10개여도 높이 고정 */}
+.angles div{display:flex; align-items:center; gap:8px; font-size:16px; font-weight:700; font-variant-numeric:tabular-nums}
+.angles i{width:14px; height:14px; border-radius:50%; flex:none}
+.angles span{margin-left:auto}
+.sum{background:var(--navy); color:var(--white); border-color:var(--navy)}
+.sum{display:flex; align-items:center; justify-content:space-between}
+.sum h2{color:#b9cdee; margin:0}
+.sum output{display:block; font-size:clamp(34px,3.4vw,46px); font-weight:900; font-variant-numeric:tabular-nums}
+.reset{margin-top:auto; background:var(--white)}
+
+@media (max-width:1000px){ body{height:auto; overflow:auto} main{grid-template-columns:1fr} .stage{height:70vh} header{flex-direction:column; align-items:flex-start} .guide{text-align:left} }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>POLYGON LAB : 다각형 탐구실</h1>
+    <p class="sub">꼭짓점을 움직이며 내각의 합을 발견해 보자!</p>
+  </div>
+  <p class="guide">동그란 꼭짓점을 마우스로 잡고 끌어 보세요. 오른쪽 슬라이더를 움직여 꼭짓점의 개수를 바꿀 수 있어요.</p>
+</header>
+
+<!-- 단계별 탐구 질문 -->
+<section class="qbar" aria-live="polite">
+  <div class="qdots" id="qdots"></div>
+  <div class="qtext"><strong id="qText"></strong><small id="qHint"></small></div>
+  <div class="qnav">
+    <button id="qPrev">이전</button>
+    <button id="qNext">다음 질문</button>
+  </div>
+</section>
+
+<main>
+  <div class="stage">
+    <svg id="svg" viewBox="0 0 800 660" preserveAspectRatio="xMidYMid meet" aria-label="다각형 탐구 영역">
+      <defs>
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M40 0H0V40" fill="none" stroke="#e3edfb" stroke-width="1.5"/>
+        </pattern>
+      </defs>
+      <rect width="800" height="660" fill="url(#grid)"/>
+      <g id="layer"></g>
+    </svg>
+  </div>
+
+  <aside class="panel">
+    <div class="card">
+      <h2>꼭짓점의 개수</h2>
+      <div class="counter"><output id="count"></output></div>
+      <input type="range" id="slider" min="3" max="10" step="1" value="3" aria-label="꼭짓점의 개수">
+      <div class="ticks"><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span></div>
+    </div>
+    <div class="card">
+      <h2>각 내각의 크기</h2>
+      <div class="angles" id="angles"></div>
+    </div>
+    <div class="card sum">
+      <h2>내각의 합</h2>
+      <output id="sum"></output>
+    </div>
+    <button class="reset" id="reset">처음으로</button>
+  </aside>
+</main>
+
+<script>
+/* ============================================================
+   1. 수학 계산 (좌표 기반) — 화면과 분리된 순수 함수
+   ============================================================ */
+/*MATH-START*/
+const W = 800, H = 660;          // 탐구 영역(SVG 좌표계)
+const M = 90;                    // 꼭짓점이 놓일 수 있는 바깥 여백
+const MIN_EDGE = 48;             // 변의 최소 길이 (일그러짐 방지)
+const MIN_EXT = 5, MAX_EXT = 175;   // 외각 범위 → 내각 5°~175°만 허용
+const R0 = 225;                  // 처음 정다각형의 반지름
+const DEG = 180 / Math.PI;
+
+// n각형(정다각형) 좌표. 첫 꼭짓점은 위쪽, 시계 방향으로 배치
+function regular(n) {
+  return Array.from({ length: n }, (_, k) => {
+    const t = -Math.PI / 2 + 2 * Math.PI * k / n;
+    return { x: W / 2 + R0 * Math.cos(t), y: H / 2 + R0 * Math.sin(t) };
+  });
+}
+
+// 볼록다각형 검사: 모든 꼭짓점에서 같은 방향으로 꺾이고, 꺾인 각의 합이 360°이면 교차 없는 볼록다각형
+function isValid(p) {
+  const n = p.length; let turn = 0;
+  for (let i = 0; i < n; i++) {
+    const a = p[(i + n - 1) % n], b = p[i], c = p[(i + 1) % n];
+    if (b.x < M || b.x > W - M || b.y < M || b.y > H - M) return false;
+    const e1x = b.x - a.x, e1y = b.y - a.y, e2x = c.x - b.x, e2y = c.y - b.y;
+    if (Math.hypot(e1x, e1y) < MIN_EDGE) return false;
+    const cr = e1x * e2y - e1y * e2x;
+    if (cr <= 0) return false;                       // 오목이거나 일직선
+    const ext = Math.atan2(cr, e1x * e2x + e1y * e2y) * DEG;
+    if (ext < MIN_EXT || ext > MAX_EXT) return false; // 너무 뾰족하거나 너무 납작
+    turn += ext;
+  }
+  return Math.abs(turn - 360) < 1e-6;
+}
+
+// 각 꼭짓점의 내각(도): 이웃한 두 변이 이루는 각을 좌표로 계산
+function interiorAngles(p) {
+  const n = p.length;
+  return p.map((b, i) => {
+    const a = p[(i + n - 1) % n], c = p[(i + 1) % n];
+    const ux = a.x - b.x, uy = a.y - b.y, vx = c.x - b.x, vy = c.y - b.y;
+    const cos = (ux * vx + uy * vy) / (Math.hypot(ux, uy) * Math.hypot(vx, vy));
+    return Math.acos(Math.max(-1, Math.min(1, cos))) * DEG;
+  });
+}
+
+// from → to 로 꼭짓점을 옮길 때 유효한 최대 비율 t (이분법)
+function maxT(p, i, x0, y0, x1, y1) {
+  const q = p.slice();
+  const ok = t => { q[i] = { x: x0 + (x1 - x0) * t, y: y0 + (y1 - y0) * t }; return isValid(q); };
+  if (ok(1)) return 1;
+  let lo = 0, hi = 1;
+  for (let k = 0; k < 40; k++) { const m = (lo + hi) / 2; if (ok(m)) lo = m; else hi = m; }
+  return lo;
+}
+
+// 꼭짓점 i를 목표 (tx,ty)로 이동. 막히면 벽을 따라 미끄러지듯 가능한 곳까지만 이동
+function moveVertex(p, i, tx, ty) {
+  const cur = p[i];
+  let best = null, bd = Infinity;
+  for (const [x, y] of [[tx, ty], [tx, cur.y], [cur.x, ty]]) {
+    const t = maxT(p, i, cur.x, cur.y, x, y);
+    const nx = cur.x + (x - cur.x) * t, ny = cur.y + (y - cur.y) * t;
+    const d = Math.hypot(tx - nx, ty - ny);
+    if (d < bd) { bd = d; best = { x: nx, y: ny }; }
+  }
+  p[i] = best;
+}
+
+// 꼭짓점 추가: 가장 긴 변의 가운데를 바깥쪽으로 살짝 밀어 새 꼭짓점을 만든다 (실패하면 정다각형)
+function addVertex(p) {
+  const n = p.length; let k = 0, L = 0;
+  for (let i = 0; i < n; i++) {
+    const l = Math.hypot(p[(i + 1) % n].x - p[i].x, p[(i + 1) % n].y - p[i].y);
+    if (l > L) { L = l; k = i; }
+  }
+  const a = p[k], b = p[(k + 1) % n];
+  const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy);
+  const nx = dy / len, ny = -dx / len;              // 바깥쪽 법선
+  for (let h = 0.3 * L; h > 4; h *= 0.8) {
+    const q = p.slice();
+    q.splice(k + 1, 0, { x: (a.x + b.x) / 2 + nx * h, y: (a.y + b.y) / 2 + ny * h });
+    if (isValid(q)) return q;
+  }
+  return regular(n + 1);
+}
+
+// 꼭짓점 삭제: 마지막 꼭짓점을 제거 (볼록성이 깨지면 정다각형)
+function removeVertex(p) {
+  const q = p.slice(0, -1);
+  return isValid(q) ? q : regular(q.length);
+}
+/*MATH-END*/
+
+/* ============================================================
+   2. 화면 구성
+   ============================================================ */
+const MIN_N = 3, MAX_N = 10;
+const COLORS = ['#e4572e','#f29e1f','#a68a00','#3fa34d','#17a2a2','#2f7de1','#6f4fd8','#c13fb5','#e0457b','#6b7c8d'];
+const LETTERS = 'ABCDEFGHIJ';
+const QUESTIONS = [
+  ['삼각형의 내각의 합은 얼마일까?', '삼각형의 꼭짓점을 이리저리 움직여 보며 내각의 합을 살펴보자.'],
+  ['꼭짓점의 개수가 하나씩 늘어나면 내각의 합은 어떻게 변할까?', '슬라이더로 꼭짓점을 하나씩 늘려 가며 내각의 합을 관찰해 보자.'],
+  ['다각형의 모양을 바꾸면 내각의 합도 달라질까?', '꼭짓점의 개수는 그대로 두고 꼭짓점을 끌어 모양만 바꿔 보자.'],
+  ['꼭짓점의 개수와 내각의 합 사이에는 어떤 규칙이 있을까?', '발견한 규칙을 내 말로 정리해서 짝에게 설명해 보자.']
+];
+
+const $ = id => document.getElementById(id);
+const svg = $('svg'), layer = $('layer');
+let pts = regular(3), step = 0, drag = null;
+
+// 다각형·각도 호·숫자·꼭짓점을 그린다
+function render() {
+  const n = pts.length, ang = interiorAngles(pts);
+  const sum = ang.reduce((s, a) => s + a, 0);   // 내각의 합 = 각 내각의 합
+  let arcs = '', labels = '', verts = '';
+
+  pts.forEach((b, i) => {
+    const a = pts[(i + n - 1) % n], c = pts[(i + 1) % n], col = COLORS[i];
+    const la = Math.hypot(a.x - b.x, a.y - b.y), lc = Math.hypot(c.x - b.x, c.y - b.y);
+    const ux = (a.x - b.x) / la, uy = (a.y - b.y) / la, vx = (c.x - b.x) / lc, vy = (c.y - b.y) / lc;
+    const r = Math.min(46, 0.4 * Math.min(la, lc));
+    const sweep = (ux * vy - uy * vx) > 0 ? 1 : 0;
+    // 내각 호(부채꼴)
+    arcs += `<path d="M${b.x} ${b.y} L${b.x + ux * r} ${b.y + uy * r} A${r} ${r} 0 0 ${sweep} ${b.x + vx * r} ${b.y + vy * r} Z"
+             fill="${col}" fill-opacity=".45" stroke="${col}" stroke-width="3"/>`;
+    // 각도 숫자: 다각형 바깥쪽 이등분선 방향에 배치해 호와 겹치지 않게 함
+    let bx = -(ux + vx), by = -(uy + vy); const bl = Math.hypot(bx, by); bx /= bl; by /= bl;
+    const lx = b.x + bx * 56, ly = b.y + by * 56;
+    labels += `<rect x="${lx - 40}" y="${ly - 16}" width="80" height="32" rx="16" fill="#fff" stroke="${col}" stroke-width="3"/>
+               <text x="${lx}" y="${ly + 6.5}" text-anchor="middle" font-size="19" font-weight="800" fill="#14284b">${ang[i].toFixed(1)}°</text>`;
+    // 꼭짓점(드래그 손잡이): 투명한 큰 원이 잡기 영역을 넓혀 줌
+    verts += `<g class="v" data-i="${i}">
+                <circle cx="${b.x}" cy="${b.y}" r="30" fill="transparent"/>
+                <circle class="vc" cx="${b.x}" cy="${b.y}" r="17" fill="${col}" stroke="#14284b" stroke-width="4"/>
+                <text x="${b.x}" y="${b.y + 6}" text-anchor="middle" font-size="17" font-weight="800" fill="#fff" pointer-events="none">${LETTERS[i]}</text>
+              </g>`;
+  });
+
+  const poly = `<polygon points="${pts.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ')}"
+                 fill="#cfe2fa" fill-opacity=".75" stroke="#14284b" stroke-width="4.5" stroke-linejoin="round"/>`;
+  layer.innerHTML = poly + arcs + labels + verts;
+
+  // 오른쪽 패널
+  $('count').innerHTML = `${n}<small>개</small>`;
+  $('slider').value = n;                      // 슬라이더 위치를 현재 개수와 맞춤
+  $('angles').innerHTML = ang.map((a, i) =>
+    `<div><i style="background:${COLORS[i]}"></i>∠${LETTERS[i]}<span>${a.toFixed(1)}°</span></div>`).join('');
+  $('sum').textContent = sum.toFixed(1) + '°';
+}
+
+// 탐구 질문을 한 단계씩 보여 준다
+function renderQuestion() {
+  $('qText').textContent = QUESTIONS[step][0];
+  $('qHint').textContent = QUESTIONS[step][1];
+  $('qdots').innerHTML = QUESTIONS.map((_, i) =>
+    `<span class="${i === step ? 'on' : i < step ? 'done' : ''}">${i + 1}</span>`).join('');
+  $('qPrev').disabled = step === 0;
+  $('qNext').disabled = step === QUESTIONS.length - 1;
+}
+
+/* ============================================================
+   3. 조작 (드래그 · 버튼)
+   ============================================================ */
+function toSvg(e) {
+  const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.getScreenCTM().inverse());
+  return { x: p.x, y: p.y };
+}
+svg.addEventListener('pointerdown', e => {
+  const g = e.target.closest('[data-i]');
+  if (!g) return;
+  e.preventDefault();
+  drag = +g.dataset.i;
+  document.body.classList.add('dragging');
+});
+window.addEventListener('pointermove', e => {
+  if (drag === null) return;
+  const t = toSvg(e);
+  moveVertex(pts, drag, t.x, t.y);
+  render();                                   // 드래그 중 실시간 갱신
+});
+window.addEventListener('pointerup', () => { drag = null; document.body.classList.remove('dragging'); });
+window.addEventListener('pointercancel', () => { drag = null; document.body.classList.remove('dragging'); });
+
+// 슬라이더: 목표 개수에 도달할 때까지 꼭짓점을 하나씩 추가/삭제
+$('slider').addEventListener('input', e => {
+  const target = +e.target.value;
+  while (pts.length < target) pts = addVertex(pts);
+  while (pts.length > target) pts = removeVertex(pts);
+  render();
+});
+$('reset').onclick = () => { pts = regular(3); step = 0; render(); renderQuestion(); };
+$('qPrev').onclick = () => { if (step > 0) { step--; renderQuestion(); } };
+$('qNext').onclick = () => { if (step < QUESTIONS.length - 1) { step++; renderQuestion(); } };
+
+render(); renderQuestion();
+</script>
+</body>
+</html>
